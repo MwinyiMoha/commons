@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - "main"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.2
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Run Tests
+        run: make test
+
+  release:
+    runs-on: ubuntu-latest
+    needs: test
+    permissions: write-all
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Tag
+        run: |
+          BASE_VERSION=${{ secrets.BASE_VERSION }}
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "TRACKING_TAG=${BASE_VERSION}-${SHORT_SHA}" >> $GITHUB_ENV
+        
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TRACKING_TAG }}
+          name: "Release ${{ env.TRACKING_TAG }}"
+          generate_release_notes: true
