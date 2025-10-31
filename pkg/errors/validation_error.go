@@ -69,7 +69,7 @@ func BuildViolations(verrs validator.ValidationErrors) []*FieldViolation {
 
 func NewValidationError(violations []*FieldViolation, msg ...string) *ValidationError {
 	message := "bad request"
-	if msg[0] != "" {
+	if len(msg) > 0 && msg[0] != "" {
 		message = msg[0]
 	}
 

@@ -12,6 +12,29 @@ import (
 	"google.golang.org/protobuf/runtime/protoiface"
 )
 
+func TestValidationerror_Message(t *testing.T) {
+
+	violations := []*FieldViolation{
+		{Field: "Name", Description: "Name is required"},
+		{Field: "Age", Description: "Age must be greater than 0"},
+	}
+	t.Run("Message provided", func(t *testing.T) {
+		validationErr := NewValidationError(violations, "invalid data")
+		assert.Equal(t, "invalid data", validationErr.Message)
+
+		st := validationErr.GRPCStatus()
+		assert.Equal(t, "invalid data", st.Message())
+	})
+
+	t.Run("Message not provided", func(t *testing.T) {
+		validationErr := NewValidationError(violations)
+		assert.Equal(t, "bad request", validationErr.Message)
+
+		st := validationErr.GRPCStatus()
+		assert.Equal(t, "bad request", st.Message())
+	})
+}
+
 func TestValidationError_ErrorMethod(t *testing.T) {
 	violations := []*FieldViolation{
 		{Field: "Name", Description: "Name is required"},
@@ -19,7 +42,6 @@ func TestValidationError_ErrorMethod(t *testing.T) {
 	}
 	validationErr := NewValidationError(violations)
 	assert.Error(t, validationErr)
-
 	errMsg := validationErr.Error()
 
 	assert.Contains(t, errMsg, "validation error(s):")
