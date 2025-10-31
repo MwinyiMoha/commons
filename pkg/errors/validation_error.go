@@ -15,6 +15,7 @@ type FieldViolation struct {
 }
 
 type ValidationError struct {
+	Message          string
 	FieldViolations  []*FieldViolation
 	ErrorDetailsFunc DetailsFunc
 }
@@ -29,7 +30,7 @@ func (e *ValidationError) Error() string {
 }
 
 func (e *ValidationError) GRPCStatus() *status.Status {
-	st := status.New(codes.InvalidArgument, "bad request")
+	st := status.New(codes.InvalidArgument, e.Message)
 
 	violations := []*errdetails.BadRequest_FieldViolation{}
 	for _, v := range e.FieldViolations {
@@ -66,9 +67,15 @@ func BuildViolations(verrs validator.ValidationErrors) []*FieldViolation {
 	return violations
 }
 
-func NewValidationError(violations []*FieldViolation) *ValidationError {
+func NewValidationError(violations []*FieldViolation, msg ...string) *ValidationError {
+	message := "bad request"
+	if msg[0] != "" {
+		message = msg[0]
+	}
+
 	return &ValidationError{
+		Message:          message,
 		FieldViolations:  violations,
-		ErrorDetailsFunc: injectDetails,
+		ErrorDetailsFunc: addErrorDetails,
 	}
 }
