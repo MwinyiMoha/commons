@@ -4,8 +4,25 @@ import (
 	"fmt"
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/runtime/protoiface"
 )
+
+type ErrorCode int
+
+const (
+	Unknown ErrorCode = iota + 1
+	NotFound
+	InvalidArgument
+	Internal
+	Unauthenticated
+	Unauthorized
+	Conflict
+	QuotaExceeded
+)
+
+type DetailsFunc func(st *status.Status, details ...protoiface.MessageV1) (*status.Status, error)
 
 type Error struct {
 	Original         error
@@ -30,9 +47,29 @@ func (e *Error) Unwrap() error {
 	return e.Original
 }
 
+func (e *Error) GRPCCode() codes.Code {
+	switch e.ErrCode {
+	case NotFound:
+		return codes.NotFound
+	case InvalidArgument:
+		return codes.InvalidArgument
+	case Internal:
+		return codes.Internal
+	case Unauthenticated:
+		return codes.Unauthenticated
+	case Unauthorized:
+		return codes.PermissionDenied
+	case Conflict:
+		return codes.AlreadyExists
+	case QuotaExceeded:
+		return codes.ResourceExhausted
+	default:
+		return codes.Unknown
+	}
+}
+
 func (e *Error) GRPCStatus() *status.Status {
-	statusCode := toGRPCCode(e.ErrCode)
-	st := status.New(statusCode, e.Message)
+	st := status.New(e.GRPCCode(), e.Message)
 
 	if e.Original != nil {
 		details := &errdetails.ErrorInfo{
@@ -51,6 +88,10 @@ func (e *Error) GRPCStatus() *status.Status {
 	return st
 }
 
+func addErrorDetails(st *status.Status, details ...protoiface.MessageV1) (*status.Status, error) {
+	return st.WithDetails(details...)
+}
+
 func WrapError(original error, code ErrorCode, format string, a ...interface{}) error {
 	message := format
 	if len(a) > 0 {
@@ -61,7 +102,7 @@ func WrapError(original error, code ErrorCode, format string, a ...interface{}) 
 		ErrCode:          code,
 		Original:         original,
 		Message:          message,
-		ErrorDetailsFunc: injectDetails,
+		ErrorDetailsFunc: addErrorDetails,
 	}
 }
 

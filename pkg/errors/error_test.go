@@ -63,6 +63,56 @@ func TestNewErrorf(t *testing.T) {
 	})
 }
 
+func TestGRPCCode(t *testing.T) {
+
+	t.Run("Internal", func(t *testing.T) {
+		err := NewErrorf(Internal, "")
+		assert.NotNil(t, err)
+		assert.Equal(t, codes.Internal, err.(*Error).GRPCCode())
+	})
+	t.Run("Not found", func(t *testing.T) {
+		err := NewErrorf(NotFound, "")
+		assert.NotNil(t, err)
+		assert.Equal(t, codes.NotFound, err.(*Error).GRPCCode())
+	})
+
+	t.Run("Bad request", func(t *testing.T) {
+		err := NewErrorf(InvalidArgument, "")
+		assert.NotNil(t, err)
+		assert.Equal(t, codes.InvalidArgument, err.(*Error).GRPCCode())
+	})
+
+	t.Run("Unauthenticated", func(t *testing.T) {
+		err := NewErrorf(Unauthenticated, "")
+		assert.NotNil(t, err)
+		assert.Equal(t, codes.Unauthenticated, err.(*Error).GRPCCode())
+	})
+
+	t.Run("Unauthorized", func(t *testing.T) {
+		err := NewErrorf(Unauthorized, "")
+		assert.NotNil(t, err)
+		assert.Equal(t, codes.PermissionDenied, err.(*Error).GRPCCode())
+	})
+
+	t.Run("Conflict", func(t *testing.T) {
+		err := NewErrorf(Conflict, "")
+		assert.NotNil(t, err)
+		assert.Equal(t, codes.AlreadyExists, err.(*Error).GRPCCode())
+	})
+
+	t.Run("Resource exhausted", func(t *testing.T) {
+		err := NewErrorf(QuotaExceeded, "")
+		assert.NotNil(t, err)
+		assert.Equal(t, codes.ResourceExhausted, err.(*Error).GRPCCode())
+	})
+
+	t.Run("Unknown", func(t *testing.T) {
+		err := NewErrorf(Unknown, "")
+		assert.NotNil(t, err)
+		assert.Equal(t, codes.Unknown, err.(*Error).GRPCCode())
+	})
+}
+
 func TestGRPCStatus(t *testing.T) {
 
 	t.Run("With original error", func(t *testing.T) {
@@ -99,20 +149,10 @@ func TestGRPCStatus(t *testing.T) {
 }
 
 func TestHelpers(t *testing.T) {
-	t.Run("Status code mapping", func(t *testing.T) {
-		assert.Equal(t, codes.Internal, toGRPCCode(Internal))
-		assert.Equal(t, codes.InvalidArgument, toGRPCCode(InvalidArgument))
-		assert.Equal(t, codes.ResourceExhausted, toGRPCCode(QuotaExceeded))
-		assert.Equal(t, codes.NotFound, toGRPCCode(NotFound))
-		assert.Equal(t, codes.Unauthenticated, toGRPCCode(Unauthenticated))
-		assert.Equal(t, codes.PermissionDenied, toGRPCCode(Unauthorized))
-		assert.Equal(t, codes.AlreadyExists, toGRPCCode(Conflict))
-		assert.Equal(t, codes.Unknown, toGRPCCode(Unknown))
-	})
 
 	t.Run("Error details addition", func(t *testing.T) {
 		st := status.New(codes.InvalidArgument, "invalid argument")
-		st, err := injectDetails(st, &errdetails.ErrorInfo{})
+		st, err := addErrorDetails(st, &errdetails.ErrorInfo{})
 
 		assert.Nil(t, err)
 		assert.Equal(t, st.Code(), codes.InvalidArgument)
