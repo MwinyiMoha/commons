@@ -69,7 +69,7 @@ func Serialize[S any, D any](s *Serializer, src *S) (*D, error) {
 
 // SerializeSlice is an extension of Serialize for slices
 func SerializeSlice[S any, D any](s *Serializer, src []*S) ([]*D, error) {
-	dst := make([]*D, 0, len(src))
+	dst := make([]*D, 0)
 
 	for _, item := range src {
 		result, err := Serialize[S, D](s, item)
