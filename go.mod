@@ -6,7 +6,9 @@ toolchain go1.24.9
 
 require (
 	github.com/go-playground/validator/v10 v10.28.0
+	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/stretchr/testify v1.11.1
+	go.mongodb.org/mongo-driver v1.17.6
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251014184007-4626949a642f
 	google.golang.org/grpc v1.76.0
