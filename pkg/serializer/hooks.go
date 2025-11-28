@@ -1,9 +1,10 @@
-package serializers
+package serializer
 
 import (
 	"reflect"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/mwinyimoha/commons/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -28,6 +29,32 @@ func objectIDHook(from reflect.Type, to reflect.Type, data any) (any, error) {
 				return nil, errors.WrapError(err, errors.InvalidArgument, "invalid ObjectID: %s", str)
 			}
 			return objectID, nil
+		}
+	}
+
+	return data, nil
+}
+
+func uuidHook(from reflect.Type, to reflect.Type, data any) (any, error) {
+
+	// uuid -> string
+	if from == reflect.TypeOf(uuid.UUID{}) && to.Kind() == reflect.String {
+		val, ok := data.(uuid.UUID)
+		if ok {
+			return val.String(), nil
+		}
+	}
+
+	// string -> uuid
+	if from.Kind() == reflect.String && to == reflect.TypeOf(uuid.UUID{}) {
+		str, ok := data.(string)
+		if ok {
+			uid, err := uuid.Parse(str)
+			if err != nil {
+				return nil, errors.WrapError(err, errors.InvalidArgument, "invalid uuid string: %s", str)
+			}
+
+			return uid, nil
 		}
 	}
 

@@ -1,4 +1,4 @@
-package serializers
+package serializer
 
 import (
 	"reflect"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-viper/mapstructure/v2"
+	"github.com/google/uuid"
 	"github.com/mwinyimoha/commons/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +34,7 @@ func TestSerializer(t *testing.T) {
 			return data, nil
 		})
 
-		assert.Len(t, serializer.hooks, 3)
+		assert.Len(t, serializer.hooks, 4)
 	})
 }
 
@@ -54,6 +55,24 @@ func TestHooks(t *testing.T) {
 
 		// string -> ObjectID (invalid)
 		_, err = objectIDHook(reflect.TypeOf(""), reflect.TypeOf(primitive.ObjectID{}), "invalid_hex")
+		assert.Error(t, err)
+	})
+
+	t.Run("UUID Hook", func(t *testing.T) {
+		u := uuid.New()
+
+		// uuid -> string
+		out, err := uuidHook(reflect.TypeOf(u), reflect.TypeOf(""), u)
+		require.NoError(t, err)
+		assert.Equal(t, u.String(), out)
+
+		// string -> uuid (valid)
+		out, err = uuidHook(reflect.TypeOf(""), reflect.TypeOf(uuid.UUID{}), u.String())
+		require.NoError(t, err)
+		assert.Equal(t, u.String(), out.(uuid.UUID).String())
+
+		// string -> uuid (invalid)
+		_, err = uuidHook(reflect.TypeOf(""), reflect.TypeOf(uuid.UUID{}), "not-a-uuid")
 		assert.Error(t, err)
 	})
 
