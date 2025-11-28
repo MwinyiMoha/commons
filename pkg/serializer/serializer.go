@@ -1,4 +1,4 @@
-package serializers
+package serializer
 
 import (
 	"reflect"
@@ -21,6 +21,7 @@ func New() *Serializer {
 		decoderFunc: mapstructure.NewDecoder,
 		hooks: []mapstructure.DecodeHookFunc{
 			objectIDHook,
+			uuidHook,
 			timestampHook,
 		},
 	}
