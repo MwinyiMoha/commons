@@ -26,7 +26,7 @@ Structured logging utilities for consistent log output across applications. Uses
 - Integration with standard Go logging patterns
 
 ### Serializer
-Type conversion and serialization utilities using reflection hooks. Uses [Mapstructure](https://github.com/mitchellh/mapstructure) under the hood and supports:
+Struct conversion and serialization utilities. Uses [Copier](https://github.com/jinzhu/copier) under the hood and supports:
 
 - Automatic conversion between struct types
 - Built in hooks for common conversions e.g `uuid <-> string`
