@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,6 +29,15 @@ type UUIDSource struct {
 
 type UUIDDest struct {
 	UserID string
+}
+
+// Test structs for pgtype.UUID conversion
+type PgUUIDSource struct {
+	ID pgtype.UUID
+}
+
+type PgUUIDDest struct {
+	ID string
 }
 
 // Test structs for Timestamp conversion
@@ -149,6 +159,68 @@ func TestUUIDConversion(t *testing.T) {
 		}
 
 		dst, err := Serialize[UUIDDest, UUIDSource](s, src)
+
+		assert.Error(t, err)
+		assert.Nil(t, dst)
+		assert.Contains(t, err.Error(), "invalid UUID")
+	})
+}
+
+func TestPgUUIDConversion(t *testing.T) {
+
+	t.Run("pgtype.UUID To String", func(t *testing.T) {
+		s := New()
+		uid := uuid.New()
+
+		src := &PgUUIDSource{
+			ID: pgtype.UUID{Bytes: uid, Valid: true},
+		}
+
+		dst, err := Serialize[PgUUIDSource, PgUUIDDest](s, src)
+
+		require.NoError(t, err)
+		require.NotNil(t, dst)
+		assert.Equal(t, uid.String(), dst.ID)
+	})
+
+	t.Run("Invalid pgtype.UUID To Empty String", func(t *testing.T) {
+		s := New()
+
+		src := &PgUUIDSource{
+			ID: pgtype.UUID{Valid: false},
+		}
+
+		dst, err := Serialize[PgUUIDSource, PgUUIDDest](s, src)
+
+		require.NoError(t, err)
+		require.NotNil(t, dst)
+		assert.Equal(t, "", dst.ID)
+	})
+
+	t.Run("String To pgtype.UUID", func(t *testing.T) {
+		s := New()
+		uid := uuid.New()
+
+		src := &PgUUIDDest{
+			ID: uid.String(),
+		}
+
+		dst, err := Serialize[PgUUIDDest, PgUUIDSource](s, src)
+
+		require.NoError(t, err)
+		require.NotNil(t, dst)
+		assert.Equal(t, uid, uuid.UUID(dst.ID.Bytes))
+		assert.True(t, dst.ID.Valid)
+	})
+
+	t.Run("Invalid UUID String", func(t *testing.T) {
+		s := New()
+
+		src := &PgUUIDDest{
+			ID: "not-a-valid-uuid",
+		}
+
+		dst, err := Serialize[PgUUIDDest, PgUUIDSource](s, src)
 
 		assert.Error(t, err)
 		assert.Nil(t, dst)
