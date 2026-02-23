@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jinzhu/copier"
 	"github.com/mwinyimoha/commons/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -58,6 +59,7 @@ func (s *Serializer) addConverter(srcType, dstType any, fn ConverterFunc) {
 }
 
 func (s *Serializer) registerDefaults() {
+
 	// ObjectID -> string
 	s.addConverter(
 		primitive.ObjectID{},
@@ -83,6 +85,37 @@ func (s *Serializer) registerDefaults() {
 				return objectID, nil
 			}
 			return nil, errors.NewErrorf(errors.Internal, "failed to convert string to ObjectID")
+		},
+	)
+
+	// pgtype.UUID -> string
+	s.addConverter(
+		pgtype.UUID{},
+		"",
+		func(src any) (any, error) {
+			if val, ok := src.(pgtype.UUID); ok {
+				if !val.Valid {
+					return "", nil
+				}
+				return val.String(), nil
+			}
+			return nil, errors.NewErrorf(errors.Internal, "failed to convert pgtype.UUID to string")
+		},
+	)
+
+	// string -> pgtype.UUID
+	s.addConverter(
+		"",
+		pgtype.UUID{},
+		func(src any) (any, error) {
+			if str, ok := src.(string); ok {
+				uid, err := uuid.Parse(str)
+				if err != nil {
+					return nil, errors.WrapError(err, errors.InvalidArgument, "invalid UUID: %s", str)
+				}
+				return pgtype.UUID{Bytes: uid, Valid: true}, nil
+			}
+			return nil, errors.NewErrorf(errors.Internal, "failed to convert string to pgtype.UUID")
 		},
 	)
 
